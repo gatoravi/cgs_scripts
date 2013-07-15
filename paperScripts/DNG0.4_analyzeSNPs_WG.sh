@@ -9,9 +9,9 @@ dng=dng0.4 # DNG version used
 #trio=${trio} # the trio being analyzed
 trio=CEU
 
-db_g_p=/home/comp/exlab/aramu/files/db/${trio}_validated_positive_germline_liftovered # germline validated positive calls
-db_s_p=/home/comp/exlab/aramu/files/db/${trio}_validated_positive_somatic_liftovered # somatic validated positivecalls
-db_n=/home/comp/exlab/aramu/files/db/${trio}_validated_negative_liftovered # somatic validated negative calls
+db_g_p=/home/comp/exlab/aramu/files/db/${trio}_validated_positive_germline_liftovered_WGS # germline validated positive calls
+db_s_p=/home/comp/exlab/aramu/files/db/${trio}_validated_positive_somatic_liftovered_WGS # somatic validated positivecalls
+db_n=/home/comp/exlab/aramu/files/db/${trio}_validated_negative_liftovered_WGS # somatic validated negative calls
 WG_DNGop=${dng}op_WG_${trio}_chr*
 WEx_DNGop=${dng}_CEU_WEx_decoy.bcf.chr*
 #DNGop=$WEx_DNGop #choose either WGS or WEx op format

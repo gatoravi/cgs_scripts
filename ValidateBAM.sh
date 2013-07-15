@@ -1,0 +1,3 @@
+#! /bin/bash
+
+java -Xmx4g -jar ~/bin/ValidateSamFile.jar VALIDATION_STRINGENCY=SILENT I=$1 O=$2 IGNORE_WARNINGS=true IGNORE=MISSING_TAG_NM MO=10000

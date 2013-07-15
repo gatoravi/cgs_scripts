@@ -1,0 +1,1 @@
+java -Xmx4g -jar /home/comp/exlab/aramu/files/Src/IGV/IGV_2.2.5/igv.jar -b $1

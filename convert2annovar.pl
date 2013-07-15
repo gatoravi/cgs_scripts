@@ -4,20 +4,20 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = 			'$Revision: 497 $';
-our $LAST_CHANGED_DATE =	'$LastChangedDate: 2011-11-21 13:56:59 -0800 (Mon, 21 Nov 2011) $';
+our $VERSION = 			'$Revision: 508 $';
+our $LAST_CHANGED_DATE =	'$LastChangedDate: 2012-10-23 23:32:05 -0700 (Tue, 23 Oct 2012) $';
 
 our ($verbose, $help, $man);
 our ($variantfile);
-our ($outfile, $format, $includeinfo, $snpqual, $snppvalue, $coverage, $maxcoverage, $chr, $chrmt, $altcov, $fraction, $species, $filterword, $confraction, $allallele,
-	$withzyg);
+our ($outfile, $format, $includeinfo, $snpqual, $snppvalue, $coverage, $maxcoverage, $chr, $chrmt, $altcov, $allelicfrac, $fraction, $species, 
+	$filterword, $confraction, $allallele, $withzyg);
 
 our %iupac = (R=>'AG', Y=>'CT', S=>'CG', W=>'AT', K=>'GT', M=>'AC', A=>'AA', C=>'CC', G=>'GG', T=>'TT', B=>'CGT', D=>'AGT', H=>'ACT', V=>'ACG', N=>'ACGT', '.'=>'-', '-'=>'-'); ### <<< FOR 5500SOLiD LifeScope ( S=>'GC' is replaced by S=>'CG')
 our %iupacrev = reverse %iupac; ### <<< FOR 5500SOLiD LifeScope
 
 GetOptions('verbose'=>\$verbose, 'help|h'=>\$help, 'man'=>\$man, 'outfile=s'=>\$outfile, 'format=s'=>\$format, 'includeinfo'=>\$includeinfo,
 	'snpqual=f'=>\$snpqual, 'snppvalue=f'=>\$snppvalue, 'coverage=i'=>\$coverage, 'maxcoverage=i'=>\$maxcoverage, 'chr=s'=>\$chr, 'chrmt=s'=>\$chrmt, 
-	'fraction=f'=>\$fraction, 'altcov=i'=>\$altcov,
+	'fraction=f'=>\$fraction, 'altcov=i'=>\$altcov, 'allelicfrac'=>\$allelicfrac,
 	'species'=>\$species, 'filter=s'=>\$filterword, 'confraction=f'=>\$confraction, 'allallele!'=>\$allallele, 'withzyg'=>\$withzyg) or pod2usage ();
 
 $help and pod2usage (-verbose=>1, -exitval=>1, -output=>\*STDOUT);
@@ -86,6 +86,8 @@ if ($format eq 'pileup') {
 	convertPileup ($variantfile);
 } elsif ($format eq 'cg') {
 	convertCG ($variantfile);
+} elsif ($format eq 'cgmastervar') {
+	convertCGMasterVar ($variantfile);
 } elsif ($format eq 'gff3-solid') {
 	convertGFF3SolidSNP ($variantfile);
 } elsif ($format eq 'soap') {
@@ -170,7 +172,10 @@ sub convertPileup {
 				$indelreadcount = calculateIndelReadCount ($obs[0], \@field);
 				$indelreadcount/$readcount >= $fraction or next;		#do not meet minimum alternative allele fraction threshold
 				defined $altcov and $indelreadcount >= $altcov || next;
-					
+				
+				if ($chr eq $chrmt or $allelicfrac) {
+					$hom = sprintf ("%.3f", $indelreadcount/$readcount);
+				}
 				($end, $ref, $alt) = recalculateEndRefObs ($pos, $wt, $obs[0]);
 				print STDOUT join ("\t", $chr, $pos, $end, $ref, $alt, $hom, $snp_quality, $readcount, $indelreadcount, @other), "\n";
 				$counthom++;
@@ -183,6 +188,9 @@ sub convertPileup {
 					$indelreadcount/$readcount >= $fraction or next;		#do not meet minimum alternative allele fraction threshold
 					defined $altcov and $indelreadcount >= $altcov || next;
 					
+					if ($chr eq $chrmt or $allelicfrac) {
+						$hom = sprintf ("%.3f", $indelreadcount/$readcount);
+					}
 					print STDOUT join ("\t", $chr, $pos, $end, $ref, $alt, $hom, $snp_quality, $readcount, $indelreadcount, @other), "\n";
 					$counthet++;
 				}
@@ -193,6 +201,9 @@ sub convertPileup {
 					$indelreadcount/$readcount >= $fraction or next;		#do not meet minimum alternative allele fraction threshold
 					defined $altcov and $indelreadcount >= $altcov || next;
 					
+					if ($chr eq $chrmt or $allelicfrac) {
+						$hom = sprintf ("%.3f", $indelreadcount/$readcount);
+					}
 					print STDOUT join ("\t", $chr, $pos, $end, $ref, $alt, $hom, $snp_quality, $readcount, $indelreadcount, @other), "\n";
 					$counthet++;
 				}
@@ -231,7 +242,7 @@ sub convertPileup {
 			my $mutallelecount;
 			
 			if ($obs[1] eq $wt) {			#het SNP
-				if ($chr eq $chrmt) {
+				if ($chr eq $chrmt or $allelicfrac) {
 					$hom = calculateAllelicFraction ($obs[0], $field[8], $readcount);
 				}
 				$mutallelecount = calculateMutAlleleCount ($obs[0], $readallele);
@@ -241,7 +252,7 @@ sub convertPileup {
 				print STDOUT join ("\t", $chr, $pos, $pos, $wt, $obs[0], $hom, $snp_quality, $readcount, $mutallelecount, @other), "\n";
 				$counthet++;
 			} elsif ($obs[1] ne $obs[0]) {		#het SNP but both differ from reference allele
-				if ($chr eq $chrmt) {
+				if ($chr eq $chrmt or $allelicfrac) {
 					$hom = calculateAllelicFraction ($obs[1], $field[8], $readcount);
 				}
 				$mutallelecount = calculateMutAlleleCount ($obs[1], $readallele);
@@ -260,7 +271,7 @@ sub convertPileup {
 				$counthet++;
 				$counthet++;
 			} else {				#homo SNP
-				if ($chr eq $chrmt) {
+				if ($chr eq $chrmt or $allelicfrac) {
 					$hom = calculateAllelicFraction ($obs[0], $field[8], $readcount);
 				}
 				$mutallelecount = calculateMutAlleleCount ($obs[0], $readallele);
@@ -382,6 +393,81 @@ sub convertCG {
 	}
 	if ($prestart and $preend) {
 		print $prechr, "\t", $prestart, "\t", $preend, "\t", $preref, "\t", $preobs, "\t", $prevartype, "\t", $prescore, "\thet\t", $prexref, "\n";
+	}
+	print STDERR "NOTICE: Done with $countline lines\n";
+}
+
+sub convertCGMasterVar {
+	#this subroutine converts CG masterVar format into ANNOVAR input format
+	#example input file is below:
+	
+	#SEGDUP_GENERATED_AT    2010-Dec-01 13:40
+	#SOFTWARE_VERSION       2.0.2.26
+	#TYPE   VAR-OLPL
+	#>locus  ploidy  chromosome      begin   end     zygosity        varType reference       allele1Seq      allele2Seq      allele1VarScoreVAF      allele2VarScoreVAF      allele1VarScoreEAF      allele2VarScoreEAF      allele1VarQuality       allele2VarQuality       allele1HapLink  allele2HapLink  allele1XRef     allele2XRef     evidenceIntervalId      allele1ReadCount        allele2ReadCount        referenceAlleleReadCount        totalReadCount  allele1Gene     allele2Gene     pfam    miRBaseId       repeatMasker    segDupOverlap   relativeCoverageDiploid calledPloidy    relativeCoverageNondiploid      calledLevel
+	#1       2       chr1    0       10000   no-call no-ref  =       ?       ?                                                                                                                                                                                                       
+	#2       2       chr1    10000   11038   no-call complex =       ?       ?                                                                                                                                                                               1.13    N       1.02    1.006
+	#3       2       chr1    11038   11055   hom     ref     =       =       =                                                                                                                                                                               1.13    N       1.02    1.006
+	#4       2       chr1    11055   11082   no-call complex =       ?       ?                                                                                                                                                                               1.13    N       1.02    1.006
+	#5       2       chr1    11082   11109   hom     ref     =       =       =                                                                                                                                                                               1.13    N       1.02    1.006
+
+	my ($variantfile) = @_;
+	
+	my ($foundheader, $countline);
+	open (VAR, $variantfile) or die "Error: cannot read from variant file $variantfile: $!\n";
+	print STDERR "NOTICE: Converting variants from $variantfile\n";
+	while (<VAR>) {
+		s/[\r\n]+$//;
+		$countline++;
+		if (m/^>locus/) {
+			$foundheader++;
+		}
+		if (not $foundheader) {
+			$countline > 50 and die "Error: invalid CG-var file format for $variantfile (>locus record is not found within the first 50 lines)\n";
+			next;
+		}
+		my ($locus, $ploidy, $chr, $start, $end, $zygosity, $vartype, $ref, $obs1, $obs2, @otherinfo) = split (/\t/, $_, -1);
+		my ($a1scorevaf, $a2scorevaf, $a1scoreeaf, $a2scoreeaf, $a1varqual, $a2varqual, $a1haplink, $a2haplink, $a1xref, $a2xref, $interval, $a1read, $a2read, $refread, $totalread) = @otherinfo;
+
+		$chr =~ s/^chr//;
+		$vartype eq 'ins' or $start++;		#CG use zero-start, half-open coordinate. Insertion does not need to be processed (example, "16476   2       2       chr1    751820  751820  ins             T       49              dbsnp:rs59038458")
+		$obs1 eq '' and $obs1 = '-';
+		$obs2 eq '' and $obs2 = '-';
+		$ref eq '' and $ref = '-';
+
+		#zygosity explanation:
+		##no-call: All alleles are partially or fully no-called.
+		##hap: Haploid, fully called locus.
+		##half: Diploid locus where one of the alleles is fully called and the other contains no-calls.
+		##hom: Diploid, homozygous, fully called locus.
+		##het-ref: Diploid, heterozygous, fully called locus where one of the alleles is identical to the reference.
+		##het-alt: Diploid, heterozygous, fully called locus where both alleles differ from the reference.
+
+		#vartype explanation:
+		##snp, ins, del, or sub: Fully called or half-called locus that contains only a single isolated variation.
+		##ref: Fully called or half-called locus that contains only reference calls and no calls and at least one allele is fully called.
+		##complex: Locus that contains multiple variations or has no-calls in all alleles. This is also the value for all loci where the reference itself is ambiguous.
+		##no-ref: Locus where the reference genome is N.
+		##PAR-called-in-X: Locus on the pseudo-autosomal region of the Y chromosomes in males.
+                
+                $zygosity eq 'no-call' and next;		#ignore locus without calls
+                
+
+                
+                
+		if ($vartype =~ m/^snp|ins|del|delins|sub$/) {		#in new versions of the files, "sub" is used instead of "delins".
+	                if ($coverage) {
+	                	$totalread >= $coverage or next;
+	                }
+	                if ($maxcoverage) {
+	                	$totalread <= $maxcoverage or next;
+	                }
+			if ($zygosity eq 'hom' or $zygosity eq 'hap') {
+				print $chr, "\t", $start, "\t", $end, "\t", $ref, "\t", $obs1, "\t", 'hom', "\t", $vartype, "\t", $totalread, "\t", $includeinfo?join("\t", "\t", @otherinfo):'', "\n";
+			} else {
+				print $chr, "\t", $start, "\t", $end, "\t", $ref, "\t", $obs1, "\t", 'het', "\t", $vartype, "\t", $totalread, "\t", $includeinfo?join("\t", "\t", @otherinfo):'', "\n";    
+			}
+		}
 	}
 	print STDERR "NOTICE: Done with $countline lines\n";
 }
@@ -536,9 +622,13 @@ sub convertGFF3SolidSNP {
 			#chr1    AB_SOLiD Small Indel Tool       insertion_site  1424540 1424540 1       .       .       ID=1376;ins_len=3;allele-call-pos=1424540;allele-call=tt/CCCAC;allele-pos=1424537;alleles=ttttttg/TTTCCCACTG/NO_CALL;allele-counts=REF,1,1;tight_chrom_pos=none;loose_chrom_pos=1424536-1424543;no_nonred_reads=2;coverage_ratio=11.5000;experimental-zygosity=HEMIZYGOUS;experimental-zygosity-score=1.0000;run_names=L1_1_25_7_r,L1_1_50_16_r;bead_ids=703_437_370,1089_878_1744;overall_qvs=1,9;no_mismatches=3,4;read_pos=5,35;from_end_pos=20,15;strands=-,-;tags=R3,F3;indel_sizes=3,3;non_indel_no_mismatches=2,0;unmatched-lengths=25,50;ave-unmatched=37.5000;anchor-match-lengths=24,47;ave-anchor-length=35.5000;read_seqs=G2032002200200000000000020,T30100102220312202103112130230322210121100200002100;base_qvs=;non_indel_seqs=T2121120003012303000000000,G22213300221101011121030022002222300220322213303102;non_indel_qvs=
 			my ($call, @call, $zygosity);
 			my ($refcall, $gapnonred, %temphash); ### <<< FOR 5500SOLiD LifeScope
-			if ($attribute =~ m#experimental-zygosity=HEMIZYGOUS# ||$attribute =~ m#zygosity=HEMIZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
-				$zygosity = 'het';
-			} elsif ($attribute =~ m#experimental-zygosity=HOMOZYGOUS# || $attribute =~ m#zygosity=HOMOZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
+			#if ($attribute =~ m#experimental-zygosity=HEMIZYGOUS# ||$attribute =~ m#zygosity=HEMIZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
+			#	$zygosity = 'het';
+			#} elsif ($attribute =~ m#experimental-zygosity=HOMOZYGOUS# || $attribute =~ m#zygosity=HOMOZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
+			#the above 3 lines are replaced by the following 3 lines on 20120618
+			if ($attribute =~ m#zygosity=(MULTI-)?HEMIZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
+			   $zygosity = 'het';
+			} elsif ($attribute =~ m#zygosity=(MULTI-)?HOMOZYGOUS#) { ### <<< FOR 5500SOLiD LifeScope
 				$zygosity = 'hom';
 			} else {
 				$zygosity = 'unk';
@@ -680,20 +770,21 @@ sub convertSOAP {
 	print STDERR "NOTICE: Read $countline lines and wrote $countvar variants\n";
 }
 
+
 sub convertANNOVAR {
 	my ($variantfile) = @_;
-	my ($countline, $countvar, $countsnp);
+	my ($countline, $countvar, $countsnp, $invalid) = (0, 0, 0, 0);
 	my ($countti, $counttv) = (0, 0);
 	
 	open (VAR, $variantfile) or die "Error: cannot read from variant file $variantfile: $!\n";
-	
 	while (<VAR>) {
 		$countline++;
-		
-		my @field = split (/\t/, $_);
+		s/[\r\n]+$//; 
+		my @field = split (/\s+/, $_);
+		@field >= 5 or die "Error: invalid record found in annovar input file (at least 5 tab or space delimited fields expected): <$_>\n";
 		my ($chr, $start, $end, $ref, $obs) = @field;
 		if ($ref =~ m/^[ACGT]$/ and $obs =~ m/^[ACGT]$/) {
-			if ($ref eq 'A' and $obs eq 'G' or $ref eq 'G' or $obs eq 'A' or $ref eq 'C' and $obs eq 'T' or $ref eq 'T' and $obs eq 'C') {
+			if ($ref eq 'A' and $obs eq 'G' or $ref eq 'G' and $obs eq 'A' or $ref eq 'C' and $obs eq 'T' or $ref eq 'T' and $obs eq 'C') {
 				$countti++;
 			} else {
 				$counttv++;
@@ -701,10 +792,26 @@ sub convertANNOVAR {
 			$countsnp++;
 		}
 		
-		print;
+		($ref, $obs) = (uc $ref, uc $obs);
+		$chr =~ s/^chr//;
+		if ($chr =~ m/[^\w\.]/ or $start =~ m/[^\d]/ or $end =~ m/[^\d]/) {		#chr name could contain . (example: GL000212.1)
+			$invalid++;
+		} elsif ($ref eq '-' and $obs eq '-' 		#both are empty allele
+			or $ref =~ m/[^ACTG0\-]/ 		#non-standard nucleotide code
+			or $obs =~ m/[^ACGT0\-]/ 		#non-standard nucleotide code
+			or $start =~ m/[^\d]/ 			#start is not a number
+			or $end =~ m/[^\d]/ 			#end is not a number
+			or $start > $end			#start is more than end
+			or $ref ne '0' and $end-$start+1 != length ($ref) 	#length mismatch with ref
+			or $ref eq '-' and $start != $end	#length mismatch for insertion
+			) {
+			$invalid++;
+		}
+		print "$_\n";
 		$countvar++;
 	}
 	print STDERR "NOTICE: Read $countline lines and wrote $countvar variants\n";
+	$invalid and print STDERR "WARNING: $invalid input lines have invalid formats\n";
 	print STDERR "NOTICE: Among $countsnp SNPs, $countti are transitions, $counttv are transversions\n";
 }
 
@@ -791,11 +898,14 @@ sub convertCASAVA {
 				for my $i (0 .. @field-1) {
 					if ($field[$i] eq 'position' or $field[$i] eq 'pos') {
 						$pos_index = $i;
-					} elsif ($field[$i] eq 'modified_call') {
+					} elsif ($field[$i] eq 'max_gt|poly_site') {		#this has priority over max_gt per se
 						$intype = 'snp';
 						print STDERR "NOTICE: Automatically detected input type as $intype\n";
 						$call_index = $i;
-					} elsif ($field[$i] eq 'reference') {
+					} elsif ($field[$i] eq 'modified_call' or $field[$i] eq 'max_gt') {
+						$intype = 'snp';
+						$call_index = $i;
+					} elsif ($field[$i] eq 'reference' or $field[$i] eq 'ref') {
 						$reference_index = $i;
 					} elsif ($field[$i] eq 'type') {
 						$type_index = $i;
@@ -809,6 +919,10 @@ sub convertCASAVA {
 						$intype = 'indel';
 						print STDERR "NOTICE: Automatically detected input type as $intype\n";
 						$ref_indel_index = $i;
+					} elsif ($field[$i] eq 'Q(max_gt|poly_site)') {	#this has priority over Q(max)
+						$quality_index = $i;
+					} elsif ($field[$i] eq 'Q(max_gt)') {	#this has priority over Q(max)
+						$quality_index = $i;
 					} elsif ($field[$i] eq 'Q(indel)') {
 						$quality_index = $i;
 					} elsif ($field[$i] eq 'max_gtype') {
@@ -826,6 +940,13 @@ sub convertCASAVA {
 			}
 			next;
 		}
+		
+		##$ COLUMNS seq_name pos bcalls_used bcalls_filt ref Q(snp) max_gt Q(max_gt) max_gt|poly_site Q(max_gt|poly_site) A_used C_used G_used T_used
+		#chr21.fa	9411785	1	0	G	11	GT	3	GT	3	0	0	0	1
+		#chr21.fa	9414658	1	0	T	10	CT	3	CT	3	0	1	0	0
+		#chr21.fa	9415181	2	0	C	52	TT	5	TT	5	0	0	0	2
+		#chr21.fa	9415317	2	0	C	6	CT	6	CT	34	0	1	0	1
+
 		
 		$intype or die "Error: unable to recognize the correct type of the input file (make sure that header line is present in $variantfile)\n";
 		@field = split (/\t/, $_);
@@ -1042,12 +1163,21 @@ sub convertVCF4 {
 			next;
 		}
 		
-		if ($mut_allele =~ m/([^,]+),([^,]+)/) {
+		if ($mut_allele =~ m/([^,]+),([\w,]+)/) {	#there could be more than two alternative alleles
 			$mut_allele = $1;
 			$mut_allele2 = $2;
 		}
 		
 		if(length($ref_allele)==1 && length($mut_allele)==1) {  	### output snv
+			if ($ref_allele =~ m/[^ACGTacgt]/ ) {
+				print STDERR "WARNING: invalid allele record found in VCF4 file (ACGT expected): <$ref_allele> and <$mut_allele> in line <$_>\n";
+				$ref_allele = 0;
+			}
+			if ( $mut_allele =~ m/[^ACGTacgt]/) {
+				print STDERR "WARNING: invalid allele record found in VCF4 file (ACGT expected): <$ref_allele> and <$mut_allele> in line <$_>\n";
+				$mut_allele = 0;
+			}
+				
 			my ($unfiltered_read_depth) = $info =~ /DP=(\d+)/;
 			my ($MappingQuality) = $info =~ /MQ=([^;]+)/; 
 			my ($QualityByDepth) = $info =~ /QD=([^;]+)/;		
@@ -1076,16 +1206,29 @@ sub convertVCF4 {
 				}
 				if (defined $sample and defined $gtpos) {
 					my @sample = split (/:/, $sample);
-					if ($sample[$gtpos] =~ m#^0/1# or $sample[$gtpos] =~ m#^1/0#) {
-						$zygosity = 'het';
-						$counthet++;
-					} elsif ($sample[$gtpos] =~ m#^1/1#) {
-						$zygosity = 'hom';
-						$counthom++;
+					#if ($sample[$gtpos] =~ m#^0/1# or $sample[$gtpos] =~ m#^1/0#) {
+					#	$zygosity = 'het';
+					#	$counthet++;
+					#} elsif ($sample[$gtpos] =~ m#^1/1#) {
+					#	$zygosity = 'hom';
+					#	$counthom++;
+					#change the above lines to the following on 20120618
+					if ($sample[$gtpos] =~ m#^(\d)/(\d)#) {
+						if ($1 == $2) {
+							$zygosity = 'hom';
+							$counthom++;
+						} else {
+							$zygosity = 'het';
+							$counthet++;
+						}
+					
 					} else {
 						$zygosity = 'unknown';
 						$countunknown++;
 					}
+				} else {		#sometimes the input VCF file does not contain the GT field!!!
+					$zygosity = 'unknown';
+					$countunknown++;
 				}
 			} else {
 				$zygosity = 'unknown';
@@ -1116,20 +1259,24 @@ sub convertVCF4 {
 			
 			if ($allallele) {
 				if ($mut_allele2) {
-					#print $chr, "\t", $start, "\t", $start, "\t", $ref_allele, "\t", $mut_allele2, "\t$zygosity",  "\t", $quality_score, (defined $unfiltered_read_depth)? "\t$unfiltered_read_depth" : '', (defined $MappingQuality) ? "\t$MappingQuality" : '', (defined $QualityByDepth) ? "\t$QualityByDepth" : '', $includeinfo ? "\t$otherinfo" : '', "\n";	#commented Sep 2011
-					if ($includeinfo) {
-						print $chr, "\t", $start, "\t", $start, "\t", $ref_allele, "\t", $mut_allele2, $withzyg?"\t$zygosity":"", "\t", $otherinfo, "\n";
-					} else {
-						print $chr, "\t", $start, "\t", $start, "\t", $ref_allele, "\t", $mut_allele2, "\t$zygosity",  "\t", $quality_score, (defined $unfiltered_read_depth)? "\t$unfiltered_read_depth" : '', (defined $MappingQuality) ? "\t$MappingQuality" : '', (defined $QualityByDepth) ? "\t$QualityByDepth" : '', "\n";
+					my @mut_allele2 = split (/,/, $mut_allele2);
+					for my $i (0 .. @mut_allele2-1) {
+						if ($includeinfo) {
+							print $chr, "\t", $start, "\t", $start, "\t", $ref_allele, "\t", $mut_allele2[$i], $withzyg?"\t$zygosity":"", "\t", $otherinfo, "\n";
+						} else {
+							print $chr, "\t", $start, "\t", $start, "\t", $ref_allele, "\t", $mut_allele2[$i], "\t$zygosity",  "\t", $quality_score, (defined $unfiltered_read_depth)? "\t$unfiltered_read_depth" : '', (defined $MappingQuality) ? "\t$MappingQuality" : '', (defined $QualityByDepth) ? "\t$QualityByDepth" : '', "\n";
+						}
 					}
 				}
 			}
 			
 			$countsnp++;
 		} elsif (length($ref_allele) > 1 || length($mut_allele) > 1) {  ### output indel
-			my ($indel_read_depth1, $indel_read_depth2) = $info =~ /AC=([^,;]+),([^,;]+)/;		#number of reads supporting consensus indel, any indel
-			my ($unfiltered_read_depth) = $info =~ /DP=(\d+)/;
-			
+			my ($indel_read_depth1, $indel_read_depth2) = $info =~ /\bAC=([^,;]+),([^,;]+)/;		#number of reads supporting consensus indel, any indel
+			my ($unfiltered_read_depth) = $info =~ /\bDP=(\d+)/;
+			my ($MappingQuality) = $info =~ /\bMQ=([^;]+)/;
+			my ($QualityByDepth) = $info =~ /\bQD=([^;]+)/;	
+					
 			if ($coverage) {
 				defined $unfiltered_read_depth and $unfiltered_read_depth >= $coverage || next;
 				if ($maxcoverage) {
@@ -1137,13 +1284,18 @@ sub convertVCF4 {
 				}
 			}
 			
-			if (defined $indel_read_depth1 and defined $unfiltered_read_depth) {
-				$indel_read_depth1/$unfiltered_read_depth >= $fraction or next;		#do not meet minimum alternative allele fraction threshold
-				$indel_read_depth1/$indel_read_depth2 >= $confraction or next;
+			if ($snpqual) {
+				defined $QualityByDepth and $QualityByDepth >= $snpqual || next;		#the QD was used here as quality score
 			}
 			
-			my ($MappingQuality) = $info =~ /MQ=([^;]+),/;
-		
+			if (defined $indel_read_depth1 and $unfiltered_read_depth) {		#deleted "defined" before $unfiltered_read_depth on 2012may25
+				$indel_read_depth1/$unfiltered_read_depth >= $fraction or next;		#do not meet minimum alternative allele fraction threshold
+				if ($indel_read_depth2) {
+					$indel_read_depth1/$indel_read_depth2 >= $confraction or next;
+				}
+			}
+			
+
 			#example VCF4 records below:
 			#20      2       .       TCG     T       .       PASS    DP=100
 			#Chr1    5473    .       AT      ATT     23.5    .       INDEL;DP=16;AF1=0.5;CI95=0.5,0.5;DP4=4,2,3,1;MQ=42;PV4=1,0.41,0.042,0.24
@@ -1156,11 +1308,11 @@ sub convertVCF4 {
 					print $start+length($head),"\t";
 					print $start+length($ref_allele)-1,"\t";
 					
-					$ref_allele = substr ($ref_allele, length ($mut_allele));
-					print $ref_allele,"\t";
+					my $ref_allele1 = substr ($ref_allele, length ($mut_allele));
+					print $ref_allele1,"\t";
 					print "-";
 				} else {
-					print $chr, "\t", $start, "\t", $start+length($ref_allele)-1, "\t", $ref_allele, "\t", $mut_allele, "\t";
+					print $chr, "\t", $start, "\t", $start+length($ref_allele)-1, "\t", $ref_allele, "\t", $mut_allele;
 				}
 			} elsif(length($mut_allele) >= length ($ref_allele)) { 		# insertion or block substitution
 				my $head = substr ($mut_allele, 0, length ($ref_allele));
@@ -1173,7 +1325,7 @@ sub convertVCF4 {
 					print "-\t";
 					print $mut_allele;
 				} else {
-					print $chr, "\t", $start, "\t", $start+length($ref_allele)-1, "\t", $ref_allele, "\t", $mut_allele, "\t";
+					print $chr, "\t", $start, "\t", $start+length($ref_allele)-1, "\t", $ref_allele, "\t", $mut_allele;
 				}
 			}
 			
@@ -1224,12 +1376,13 @@ sub convertVCF4 {
 			if ($includeinfo) {
 				 print $withzyg?"\t$zygosity":"", "\t", $otherinfo;
 			} else {
-				print "\t", $zygosity;
-				print "\t", $quality_score;
+				print "\t$zygosity";
+				defined $quality_score and print "\t", $quality_score;
 				defined $unfiltered_read_depth and print "\t", $unfiltered_read_depth;
 				
-				defined $indel_read_depth1 and print "\t", $indel_read_depth1;
+				#defined $indel_read_depth1 and print "\t", $indel_read_depth1;		#commented out Nov 2011
 				defined $MappingQuality and print "\t", $MappingQuality;
+				defined $QualityByDepth and print "\t", $QualityByDepth;		#added in Nov 2011 to be consistent with SNP output
 				#$includeinfo and print "\t", $otherinfo;	#commented Sep 2011
 			}
 			print "\n";
@@ -1238,8 +1391,9 @@ sub convertVCF4 {
 
 			#do the same thing again, exactly like above, except that we work on second mutation;
 			#in the future, consider rewrite this paragraph to make the code more elegant	
-			if ($allallele) {
-				if ($mut_allele2) {
+			if ($allallele and $mut_allele2) {
+				my @mut_allele2 = split (/,/, $mut_allele2);
+				for my $mut_allele2 (@mut_allele2) {
 					if(length($ref_allele) > length ($mut_allele2)) { 		# deletion or block substitution
 						my $head = substr($ref_allele, 0, length ($mut_allele2));
 						if ($head eq $mut_allele2) {
@@ -1247,8 +1401,8 @@ sub convertVCF4 {
 							print $start+length($head),"\t";
 							print $start+length($ref_allele)-1,"\t";
 							
-							$ref_allele = substr ($ref_allele, length ($mut_allele2));
-							print $ref_allele,"\t";
+							my $ref_allele1 = substr ($ref_allele, length ($mut_allele2));
+							print $ref_allele1,"\t";
 							print "-";
 						} else {
 							print $chr, "\t", $start, "\t", $start+length($ref_allele)-1, "\t", $ref_allele, "\t", $mut_allele2;
@@ -1260,7 +1414,7 @@ sub convertVCF4 {
 							print $start+length($ref_allele)-1,"\t";
 							print $start+length($ref_allele)-1,"\t";
 							
-							$mut_allele = substr ($mut_allele2, length ($ref_allele));
+							$mut_allele2 = substr ($mut_allele2, length ($ref_allele));
 							print "-\t";
 							print $mut_allele2;
 						} else {
@@ -1327,6 +1481,7 @@ sub convertVCF4 {
             --chr <string>		specify the chromosome (for CASAVA format)
             --chrmt <string>		chr identifier for mitochondria (default: M)
             --altcov <int>		alternative allele coverage threshold (for pileup format)
+            --allelicfrac		print out allelic fraction rather than het/hom status (for pileup format)
             --fraction <float>		minimum allelic fraction to claim a mutation (for pileup/vcf4_indel format)
             --species <string>		if human, convert chr23/24/25 to X/Y/M (for gff3-solid format)
             --filter <string>		output variants with this filter (case insensitive, for vcf4 format)
@@ -1346,7 +1501,7 @@ sub convertVCF4 {
           convert2annovar.pl -format vcf4 variantfile > variant.avinput
           convert2annovar.pl -format vcf4 -filter pass variantfile > variant.avinput
 
- Version: $LastChangedDate: 2011-11-21 13:56:59 -0800 (Mon, 21 Nov 2011) $
+ Version: $LastChangedDate: 2012-10-23 23:32:05 -0700 (Tue, 23 Oct 2012) $
 
 =head1 OPTIONS
 

@@ -1,0 +1,1 @@
+ ~/files/Src/bedtools-2.17.0/bin/genomeCoverageBed -ibam $1 > ${1}.genomeCoverage.op.txt

@@ -1,0 +1,1 @@
+ java -Xmx6g -jar ~/files/Src/GenomeAnalysisTK-2.1-8-g5efb575/GenomeAnalysisTK.jar -T FindCoveredIntervals -R ~/files/20110915_CEUtrio/WGS/ref/hs37d5.fa  -I /home/comp/exlab/aramu/files/JoeStuff/MiSeqFiles/Dat/D.R1.m.sorted.RG.bam -o FCI_plain.op
