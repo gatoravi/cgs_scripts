@@ -1,0 +1,1 @@
+cat ${1} | java -Xmx4g -jar ~/bin/VarScan.v2.2.11.jar readcounts --strand-filter 0 2>&1 | awk '$3 ~ /[ACGT]/' | sed -e 's/:/\t/g' | awk '{ altA = $14; altC = $15; if(NF<14) { altA = "NA"; altC = 0; } if($15+$7 != 0) print $1":"$2"\t"$6"\t"$7"\t"altA"\t"altC"\t"altC/(altC + $7) }' | sort >  ${1}.af.txt
