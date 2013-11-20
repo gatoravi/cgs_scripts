@@ -6,4 +6,4 @@ b2=$3
 b3=$4
 chr=X
 
-samtools mpileup -gDf $ref $b1 $b2 $b3 -r $chr > CEU.$chr.bcf
+samtools mpileup -gDf $ref $b1 $b2 $b3 -r $chr > YRI.$chr.bcf

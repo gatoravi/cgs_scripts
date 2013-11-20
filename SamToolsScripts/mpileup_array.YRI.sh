@@ -10,6 +10,6 @@ bam3=$3
 
 
 echo $chr
-bash ~/Scripts/SamToolsScripts/mpileup.sh $ref $bam1 $bam2 $bam3 $chr
+bash ~/Scripts/SamToolsScripts/mpileup.YRI.sh $ref $bam1 $bam2 $bam3 $chr
 
 

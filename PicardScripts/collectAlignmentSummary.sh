@@ -1,0 +1,1 @@
+java -Xmx4g -jar ~/files/Src/Picard/picard-tools-1.84/CollectAlignmentSummaryMetrics.jar I=${1} O=${1}.alignment.summary.txt R=~/Dat/ref/hs37d5.fa VALIDATION_STRINGENCY=SILENT

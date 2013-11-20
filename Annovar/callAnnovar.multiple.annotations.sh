@@ -20,9 +20,9 @@ singleExons=refseq.singleExonGenes.hg19.bed #single Exon genes
 for class in simpleRepeats segDups dbSNP dgv conradCNV 
 do
     echo $class
-    $home/Scripts/annotate_variation.pl --buildver hg19 $1 $DB -bedfile ${!class} -dbtype bed -regionanno -outfile ${1}.${class}.op 
+    $home/Scripts/PerlScripts/annotate_variation.pl --buildver hg19 $1 $DB -bedfile ${!class} -dbtype bed -regionanno -outfile ${1}.${class}.op 
 done
 
 cat ${1}.*bed |  awk '{ print $3"\t"$4"\t"$5"\t"$6"\t"$7 }' | sort -u  > ${1}.unique.inAnnotations.txt
 cat $1 ${1}.unique.inAnnotations.txt | sort | uniq --count | awk '{ if($1!=2) print $2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7 }' > ${1}.unique.notInAnnotations.txt
-perl $home/Scripts/annotate_variation.pl ${1}.unique.notInAnnotations.txt --buildver hg19 $home/Dat/Annovar/humandb/
+perl $home/Scripts/PerlScripts/annotate_variation.pl ${1}.unique.notInAnnotations.txt --buildver hg19 $home/Dat/Annovar/humandb/

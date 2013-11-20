@@ -12,6 +12,7 @@ bwa=~/bin/bwa
 fastqp1=$1
 fastqp2=$2
 sampleName=$3
+
 sai1=$fastqp1".sai"
 sai2=$fastqp2".sai"
 nthreads=8
@@ -27,8 +28,11 @@ echo $RGinfo
 $bwa aln -t $nthreads $ref $fastqp1 > $sai1
 $bwa aln -t $nthreads $ref $fastqp2 > $sai2
 
-$bwa sampe $sampeOptions $index $sai1 $sai2 $fastqp1 $fastqp2 -r $RGinfo  > $sampleName".sam"
+$bwa sampe $sampeOptions $ref $sai1 $sai2 $fastqp1 $fastqp2 -r $RGinfo  > $sampleName".sam"
 
 samtools view -bS $sampleName".sam" > $sampleName".bam"
 
-samtools sort $sampleName".bam" > $sampleName".sorted"
+samtools sort $sampleName".bam" $sampleName".sorted"
+
+samtools index $sampleName".sorted.bam"
+

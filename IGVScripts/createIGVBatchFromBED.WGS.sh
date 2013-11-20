@@ -20,6 +20,6 @@ echo load /home/dclab/aramu/files/20110915_CEUtrio/WGS/BAMFiles/CEUTrio.HiSeq.WG
 echo snapshotDirectory .
 echo genome hg19
 
-awk -v w=$W '{ print "\ngoto "$1":"$2"-"$2+w"\nsort\ncollapse\nsnapshot" }' $1 
+awk -v w=$W '{ print "\ngoto "$1":"$2"-"$3"\nsort\ncollapse\nsnapshot" }' $1 
 
 echo exit
