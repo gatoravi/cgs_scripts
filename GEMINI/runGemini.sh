@@ -8,6 +8,9 @@ VEP_OUTPUT_GZ=snvs_annotated.vcf.gz
 VEP_STATS=vep_stats.html
 GEMINI_DB=GTB15.db
 
+#Get the variants from the ref-align models
+#scp aramu@linus217:/gscmnt/gc13022/info/model_data/9ade7950b05a4ec7a77f6a7fb9ab207e/build9443487effb247c1abc11335d5dbbb05/variants/snvs.vcf.gz .
+
 #Filter input VCF based on depth
 #vcftools --min-meanDP 10 --gzvcf ${INPUT_VCF} --out ${VCFTOOLS_PREFIX} --recode
 
