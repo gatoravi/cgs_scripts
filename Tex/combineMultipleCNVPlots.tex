@@ -1,0 +1,42 @@
+\documentclass[a4paper,12pt]{article}
+% \documentclass[landscape, 12pt]{report}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\pagenumbering{gobble}
+
+\begin{document}
+\begin{figure}
+\caption*{\detokenize\expandafter{\sample}}
+
+\IfFileExists{\wgsf}{
+  \begin{subfigure}[b]{0.5\textwidth}
+  \includegraphics[width=\textwidth]{\wgs}
+  \caption{WGS}
+  \end{subfigure}
+}
+~
+\IfFileExists{\maf}{
+  \begin{subfigure}[b]{0.5\textwidth}
+  \includegraphics[width=\textwidth]{\ma}
+  \caption{Microarray}
+  \end{subfigure}
+}
+\\
+\IfFileExists{\exomef}{
+  \begin{subfigure}[b]{0.5\textwidth}
+  \includegraphics[width=\textwidth]{\exome}
+  \caption{Exome}
+  \end{subfigure}
+}
+~
+\IfFileExists{\combinedf}{
+  \begin{subfigure}[b]{0.5\textwidth}
+  \includegraphics[width=\textwidth]{\combined}
+  \caption{Combined}
+  \end{subfigure}
+}
+
+\end{figure}
+\end{document}

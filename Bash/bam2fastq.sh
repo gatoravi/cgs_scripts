@@ -1,0 +1,1 @@
+gmt picard sam-to-fastq --use-version=1.85 --maximum-permgen-memory=256 --maximum-memory=16 --max-records-in-ram=2500000 --fastq2=${2}_2.fastq --fastq=${2}_1.fastq --input=${1} --fragment-fastq=${2}_fragments.fastq
