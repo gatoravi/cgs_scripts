@@ -23,7 +23,7 @@ def get_seq(ref_fa, chrom, pos):
 def mutate(seq):
     "Complement the base in the middle"
     seq = list(seq)
-    seq[len(seq)/2] = mutator[seq[len(seq)/2]]
+    seq[len(seq)/2] = mutator[seq[len(seq)/2] - 1]
     return "".join(seq)
 
 def get_bq(mean1 = 30, sd1 = 2):
