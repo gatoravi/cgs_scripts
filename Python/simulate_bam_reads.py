@@ -53,6 +53,7 @@ def main():
     if len(sys.argv) >= 4:
         ref_fa = sys.argv[1]
         allele_fraction = float(sys.argv[2])
+        sys.stderr.write("Allele fraction is " + sys.argv[2] + "\n")
         chrom, pos = sys.argv[3].split(":")
         print_header(chrom)
         for locus in sys.argv[3:]:
@@ -65,14 +66,15 @@ def main():
             global read_number
             read_number = 0
             while (read_number < n_reads):
-                read_number = read_number + 1
-                qname = "fake-read:" + str(read_number)
-                print qname + "\t" + wt_read
                 #coin-toss
-                if(numpy.random.uniform(0, 1) > allele_fraction):
+                if(numpy.random.uniform(0, 1) >= allele_fraction):
                     read_number = read_number + 1
                     qname = "fake-read:" + str(read_number)
                     print qname + "\t" + mut_read
+                else:
+                    read_number = read_number + 1
+                    qname = "fake-read:" + str(read_number)
+                    print qname + "\t" + wt_read
     else:
         usage()
 
